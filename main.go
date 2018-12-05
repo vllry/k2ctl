@@ -8,6 +8,17 @@ import (
 	"time"
 )
 
+var inputYaml = `
+specVersionMajor: 0
+specVersionMinor: 0
+id: test
+containers:
+  - web:
+    image: nginx
+    tag: latest
+replicas: 1
+`
+
 func main() {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
@@ -15,11 +26,13 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := api.NewKube2Client(conn)
+	c := api.NewWorkloadApiClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	r, err := c.CreateContainer(ctx, &api.CreateContainerRequest{Image: "nginx", ImageTag: "latest"})
+	r, err := c.WorkloadApply(ctx, &api.Workload{
+		Yaml:inputYaml,
+	})
 	if err != nil {
 		log.Fatalf("could not launch: %v", err)
 	}
